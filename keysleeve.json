@@ -1,0 +1,13 @@
+{
+    "fileFormatVersion": "1",
+    "parameterSets": {
+        "New set 1": {
+            "font": "Arial",
+            "key_style": "0",
+            "label": "demo",
+            "letter_emboss": "-0.5",
+            "letter_height": "4",
+            "raise_text": "0"
+        }
+    }
+}
