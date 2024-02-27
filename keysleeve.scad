@@ -8,7 +8,6 @@ Website: torknado.com/3d
 
 GNU GENERAL PUBLIC LICENSE, Version 3
  International License
-    https://creativecommons.org/licenses/by-sa/4.0/legalcode
 */
 
 key_style = 0; // [ 0: Kwikset #66 - 3 holes, 1: HY-KO KW1, 2: Minutekey plain, 3: Minutekey cutout, 4: Schlage #95, 5: Hillman #95, 6: Ace KW1, 7: Unknown #1 ]
