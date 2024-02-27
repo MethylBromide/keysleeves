@@ -2,6 +2,8 @@
 
 This script for OpenSCAD uses user-selected parameters to create 3D models of key sleeves. A key sleeve is a short piece that slides onto the head of the key, identifying the key by color and customizable label text.
 
+**Note**: Currently requires version _Development snapshot_ because it uses the new 'fill' method.
+
 The script requires support files which are SVG images of the outlines of the supported key heads. It can be extended to support more key types by adding SVG files and some coded parameters describing the key and specifying the shape of the sleeve.
 
 The sleeve will require some flexibility to slide onto the key. Resin prints might be too brittle -- FDM suggested.
@@ -33,20 +35,22 @@ The best way to create this image is to photograph or scan the key, then trace t
 
 Clean up any sharp corners on the edges of the traced shape, which can cause rendering errors.
 
-If there's text on the key head that identifies the manufacturer or model number of the key, by all means add that text within the body of the key head at approximately the right position. Then convert the text to vectors and make it part of the same path as the key outline.
+If there's text on the key head that identifies the manufacturer or model number of the key, add that text within the body of the key head at approximately the right position. Then convert the text to vectors and make it part of the same path as the key outline.
 
 It's not important functionally how much of the shaft of the key is included, but the custom is "just a little", and for aesthetic reasons that shouldn't vary much.
 
 The image should be scaled to the exact size of the key head, and that one path should be the only thing in the SVG file. Use mm units.
 
+The SVG file, after import, is rotated to be upright in the XZ plane, since that's how these sleeves will normally be 3D-printed. The key descriptions below specify coordinates based on that assumption, so they are mostly (x,z) coordinates.
+
 ### Key description parameters
 
 You must add an entry to the **choices** list describing the key and the sleeve you want to create. Use a caliper to take the dimensions of the key head -- width and depth. Most keys are about 1.8mm thick, and that's the script's default. If yours is much different there's a way to supply that information. The sleeve is designed to fit pretty snugly, so if the width is wrong there will be a problem.
 
-The parameters for a key type are a list of values as follows (all coordinates in mm):
+The parameters for a key type are a list of values as follows. All coordinates are in mm and take the lower left corner of the SVG image as the (0,0) point.
 
 0. SVG filename, without the SVG file extension. The file is assumed to be in the same folder as the script.
-1. Y coordinate of cut line for bottom of sleeve. This distance is measured from the bottom of the key outline in the SVG.
-2. Either the Y coordinate for the cut line for top of sleeve, or a list of y-coordinates. If a list, the X coordinates are calculated as evenly spaced across the sleeve.
-3. width of key, or `[width,depth]` for thicker/thinner keys. The depth will be the depth of the hollow for the key head, so include an extra .2mm or so to accommodate imprecise printing.
-4. (and above) `[x_center,y_center,width]` to position a wedge inside the sleeve to lock into holes in the key.
+1. Z coordinate of cut line for bottom of sleeve. This distance is measured from the bottom of the key outline in the SVG.
+2. Either the Z coordinate for the cut line for top of sleeve, or a list of z-coordinates. If a list, the X coordinates are calculated, evenly spaced across the sleeve.
+3. width of key (x dimension), or `[width,depth]` for thicker/thinner keys. The depth (y-dimension) will be the depth of the hollow for the key head, so include an extra .2mm or so to accommodate imprecise printing.
+4. (and ...) `[x_center,z_center,width]` to position wedges inside the sleeve to lock into holes in the key.
