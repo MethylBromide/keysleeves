@@ -11,20 +11,22 @@ GNU GENERAL PUBLIC LICENSE, Version 3
 */
 
 key_style = 0; // [ 0: Kwikset #66 - 3 holes, 1: HY-KO KW1, 2: Minutekey plain, 3: Minutekey cutout, 4: Schlage #95, 5: Hillman #95, 6: Ace KW1, 7: Unknown #1 ]
-label_line_1 = "demo";
+label_line_1 = "DEMO";
 label_line_2 = "";
-font = "Lucida Sans Unicode,sans-serif";
+font = "Arial Black, Gadget, sans-serif";
 // Height of label characters (mm)
 letter_height = 4.3; //[2:.1:7]
-// Shift label up this far (mm)
-raise_text = 0; //[-4:.1:4]
-// positive to emboss, negative to engrave label.
-letter_emboss = -.5;
+// Reposition text vertically (mm)
+text_position = 0; //[-4:.1:4]
+line_spacing = 1.4; // [.8:.05:3]
+// positive for raised lettering, negative for engraved (mm)
+letter_emboss = -.5; // [-1:.05:.5]
 
 module textlines(texts, size=4, halign="center", font="", lineheight=1.4) {
     lines = is_list(texts) ? texts : [texts];
+    delta_y = ((len(lines)-1)*size*lineheight - size)/2;
     for (i=[0:len(lines)-1]) {
-        translate([0,-i*size*lineheight,0]) text( lines[i], font=font, size=size,halign=halign);
+        translate([0,delta_y-i*size*lineheight,0]) text( lines[i], font=font, size=size,halign=halign);
     }
 }
 
@@ -48,6 +50,10 @@ module flip_import(filename, width, fill=false) {
     }
 }
 
+$fa = 1;
+$fs = 0.4;
+// positive to emboss, negative to engrave label.
+
 // parameters for a key type are:
 //  0: SVG filename.
 //  1: cut line for bottom of sleeve.
@@ -55,12 +61,13 @@ module flip_import(filename, width, fill=false) {
 //  3: width of key, or [width,depth] for thicker/thinner keys.
 //  4-n: [x,y,width] to position wedges inside the sleeve to lock into holes in the key.
 choices = [
-    ["kwikset-3-holes", 4.47, 14.47, 22, [5.4,13.85,3.6], [16.6,13.85,3.6]],
-    ["hy-ko-KW1", 3, 19.37, 22.5, [11.25,18.8,5]],
-    ["minutekey-plain", 0, 16.88, 22.2, [11.1,16.29,2.5]],
+    ["kwikset-3-holes", 3.47, 14.5, 22, [5.4,13.85,3.6], [16.6,13.85,3.6]],
+    ["hy-ko-KW1", 3, 19.48, 22.5, [11.25,18.9,5]],
+    ["minutekey-plain", .56, 16.88, 22.2, [11.1,16.29,2.5]],
     ["minutekey-cutout", 6.7, 17.8, 22.2, [11.1,15.19,2.5]],
-    ["schlage-95", 9, [17,20,22.8,22.8,20,17], [26.2,2.4], [13.1,22.2, 4]],
-    ["hillman-95", 9, [17,20,21.0,21.0,20,17], 25, [12.5,20.4, 4]],
+//    ["schlage-95", 5.32, [17,20,22.8,22.8,20,17], [25.2,2.4], [13.1,22.2, 4]],
+    ["schlage-95", 5.32, [16,18.5,22,22,18.5,16], [26.2,2.4], [12.6,21.4, 4]],
+    ["hillman-95", 9, [17,20,20.9,20.9,20,17], 25, [12.5,20.3, 4]],
     ["ace-kw1", 4, [12,18.9,18.9,12], 22.5, [11.25,18.3, 4]],
     ["unknownkey1", 6, 20.3, 22.3, [11.15,19.7,5]]
     ];
@@ -70,10 +77,11 @@ if(key_style < 0 || key_style >= len(choices)) {
 } else {
     parms = choices[key_style];
     filename = str(parms[0], ".svg");
+    bottom = parms[1];
     top = parms[2];
     keywidth = is_list(parms[3]) ? parms[3][0] : parms[3];
-    keydepth = is_list(parms[3]) ? parms[3][1] : 2;
-    textpos = is_list(top) ? ((min(top)+max(top))/2) : (top-2);
+    keydepth = is_list(parms[3]) ? (parms[3][1]+.2) : 2;
+    textpos = bottom + (max(top) - bottom)/2 + text_position;
     labelText = (label_line_2=="")?[label_line_1]:[label_line_1,label_line_2];
 
     rotate([90, 0, 0]) {
@@ -90,29 +98,33 @@ if(key_style < 0 || key_style >= len(choices)) {
     //            circle(.2);
             }
             
-            // trim bottom of sleeve to specified y-coordinate.
-            translate([-2,-2.999,-.5]) cube([30,3+parms[1],3+keydepth]);
+            // trim bottom of sleeve to specified bottom height.
+            translate([-2,-3,-1]) cube([30,3+bottom,4+keydepth]);
             
             // trim top of sleeve to specified y-coordinate or set of points.
             if(is_list(top)) {
                 s_wid = keywidth + 2.02;
                 lim = len(top)-1;
-                points = concat([for(i = [0:lim]) [i/lim*s_wid - 1.01, top[i]]], [[s_wid-1.01,50],[-1.01,50]]);
-                translate([0, 0, -.5]) linear_extrude(height=3+keydepth) polygon(points);
+                points = [
+                    for(i = [0:lim]) [i/lim*s_wid - 1.01, top[i]],
+                    [s_wid-1.01,50],
+                    [-1.01,50]
+                ];
+                translate([0, 0, -1]) linear_extrude(height=4+keydepth) polygon(points);
             } else {
-                translate([-2,top,-.5]) cube([30,30,3+keydepth]);
+                translate([-2,top,-1]) cube([30,30,4+keydepth]);
             }
             
             if (label_line_1 != "" && letter_emboss < 0) {
                // text on both sides (if engraved).
-                translate([keywidth/2, textpos-letter_height+raise_text, 2.001+keydepth+letter_emboss])
-                linear_extrude(height=-letter_emboss)
-                textlines(labelText, size=letter_height, font=font);
+                translate([keywidth/2, textpos, 2+keydepth+letter_emboss])
+                    linear_extrude(height=1-letter_emboss)
+                    textlines(labelText, size=letter_height, font=font, lineheight = line_spacing);
                 
-                translate([keywidth/2, textpos-letter_height+raise_text, -.001])
-                linear_extrude(height=-letter_emboss)
-                rotate([0,180,0])
-                textlines(labelText, size=letter_height, font=font);
+                translate([keywidth/2, textpos, -1])
+                    linear_extrude(height=1-letter_emboss)
+                    rotate([0,180,0])
+                    textlines(labelText, size=letter_height, font=font, lineheight = line_spacing);
             }
         }
         // wedges to lock into holes in key
@@ -125,19 +137,19 @@ if(key_style < 0 || key_style >= len(choices)) {
         }
         // text on both sides (if embossed).
         if (label_line_1 != "" && letter_emboss > 0) {
-            translate([keywidth/2, textpos-letter_height+raise_text, 1.999 + keydepth])
-            linear_extrude(height=letter_emboss)
-            textlines(labelText, size=letter_height, font=font);
+            translate([keywidth/2, textpos, 1.999 + keydepth])
+            linear_extrude(height=letter_emboss+.001)
+            textlines(labelText, size=letter_height, font=font, lineheight = line_spacing);
             
-            translate([keywidth/2, textpos-letter_height +raise_text, .001-letter_emboss])
-            linear_extrude(height=letter_emboss)
+            translate([keywidth/2, textpos, -letter_emboss])
+            linear_extrude(height=letter_emboss+.001)
             rotate([0,180,0])
-            textlines(labelText, size=letter_height, font=font);
+            textlines(labelText, size=letter_height, font=font, lineheight = line_spacing);
         }
      
         // show ghost key tops and filename for user reference
         %translate([-28,0,0]) import(filename);
-        %translate([0,1.05, 0]) linear_extrude(height=keydepth, convexity=20) flip_import(filename, width=keywidth);
+        %translate([0,0, 1.1]) linear_extrude(height=keydepth-.2, convexity=20) flip_import(filename, width=keywidth);
         %translate([0, -7, 1]) text(parms[0], 5, halign="center");
     }
 }
