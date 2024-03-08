@@ -61,15 +61,15 @@ $fs = 0.4;
 //  3: width of key, or [width,depth] for thicker/thinner keys.
 //  4-n: [x,y,width] to position wedges inside the sleeve to lock into holes in the key.
 choices = [
-    ["kwikset-3-holes", 3.47, 14.5, 22, [5.4,13.85,3.6], [16.6,13.85,3.6]],
-    ["hy-ko-KW1", 3, 19.48, 22.5, [11.25,18.9,5]],
-    ["minutekey-plain", .56, 16.88, 22.2, [11.1,16.29,2.5]],
-    ["minutekey-cutout", 6.7, 17.8, 22.2, [11.1,15.19,2.5]],
+    ["kwikset-3-holes", 3.47, 14.8, 22, [5.4,13.85,3.6], [16.6,13.85,3.6]],
+    ["hy-ko-KW1", 3, 19.62, 22.5, [11.25,18.8,5]],
+    ["minutekey-plain", .56, [11,17.2,17.2,11], 22.2, [11.1,16.29,2.5]],
+    ["minutekey-cutout", 6.7, 16.8, 22.2, [11.1,15.11,2.5]],
 //    ["schlage-95", 5.32, [17,20,22.8,22.8,20,17], [25.2,2.4], [13.1,22.2, 4]],
-    ["schlage-95", 5.32, [16,18.5,22,22,18.5,16], [26.2,2.4], [12.6,21.4, 4]],
-    ["hillman-95", 9, [17,20,20.9,20.9,20,17], 25, [12.5,20.3, 4]],
-    ["ace-kw1", 4, [12,18.9,18.9,12], 22.5, [11.25,18.3, 4]],
-    ["unknownkey1", 6, 20.3, 22.3, [11.15,19.7,5]]
+    ["schlage-95", 5.32, [16,18.5,22.25,22.25,18.5,16], [26.2,2.4], [12.6,21.4, 4]],
+    ["hillman-95", 9, [17,20,21.2,21.2,20,17], 25, [12.5,20.3, 4]],
+    ["ace-kw1", 4, [12,18.9,18.9,12], 22.5, [11.25,18.1, 4]],
+    ["unknownkey1", 6, 20.45, 22.3, [11.15,19.6,5.5]]
     ];
 
 if(key_style < 0 || key_style >= len(choices)) {
@@ -84,7 +84,8 @@ if(key_style < 0 || key_style >= len(choices)) {
     textpos = bottom + (max(top) - bottom)/2 + text_position;
     labelText = (label_line_2=="")?[label_line_1]:[label_line_1,label_line_2];
 
-    rotate([90, 0, 0]) {
+    rotate([90, 0, 0])
+    {
         difference() {
             // main body of key sleeve - 1mm border around key shape.
             color("#0000ff40") linear_extrude(2+keydepth, convexity=0) offset(r=1) {
@@ -131,8 +132,12 @@ if(key_style < 0 || key_style >= len(choices)) {
         if (!is_undef(parms[4])) {
             for (i = [4:len(parms)-1]) {
                 point = parms[i];
-                translate([point[0],point[1],1]) rotate([45,0,0]) cube([point[2], .8, .8], center=true);
-                translate([point[0],point[1],1+keydepth]) rotate([45,0,0]) cube([point[2], .8, .8], center=true);
+//                translate([point[0],point[1],1]) rotate([45,0,0]) cube([point[2], .8, .8], center=true);
+                translate([point[0]-point[2]/2,point[1]-.5,1])
+                    rotate([90,0,90])
+                    linear_extrude(height=point[2])
+                    polygon([[0,0],[.4,1],[1.3,0], [1.3,-.01],[0,-.01]]);
+//                translate([point[0],point[1],1+keydepth]) rotate([45,0,0]) cube([point[2], .8, .8], center=true);
             }
         }
         // text on both sides (if embossed).
