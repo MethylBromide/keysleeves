@@ -4,29 +4,59 @@ Parameterized Key Sleeve script
 By Tyler Tork
 Twitter: @tylertorkfictioneer
 Email: tyler@tylertork.com
-Website: torknado.com/3d
+Website: tylertork.com/3d
 
-GNU GENERAL PUBLIC LICENSE, Version 3
+Creative Commons - Attribution - Non-Commercial 4.0
  International License
+ https://creativecommons.org/licenses/by-nc/4.0/
 */
 
-key_style = 0; // [ 0: Kwikset #66 - 3 holes, 1: HY-KO KW1, 2: Minutekey plain, 3: Minutekey cutout, 4: Schlage #95, 5: Hillman #95, 6: Ace KW1, 7: Unknown #1 ]
-label_line_1 = "DEMO";
-label_line_2 = "";
-font = "Arial Black, Gadget, sans-serif";
+use <objects.scad>
+use <textures.scad>
+key_style = "KwikSet #66"; // [ KwikSet #66: Kwikset #66 - 3 holes, HY-KO KW1, MinuteKey - plain, MinuteKey - cutout, Schlage #95, Hillman #95, Ace KW1, ILCO FA3, Unknown #1 ]
+On_front = "L"; //[L:text label, B:Braille, T:texture]
+On_back = "S"; // [ S: same as front, L:text label, B:Braille, T:texture ]
+//if "On front" is text or Braille
+Label_front = "DEMO"; //8
+//if "On back" is text or Braille
+Label_back = ""; //8
+Texture = "dots"; // [ horizontal: horizontal lines, vertical: vertical lines, dots, bumps, zigzag, pips, blank ]
+
+/* [Label settings] */
+Font = "Arial Black, Gadget, sans-serif";
 // Height of label characters (mm)
 letter_height = 4.3; //[2:.1:7]
 // Reposition text vertically (mm)
 text_position = 0; //[-4:.1:4]
-line_spacing = 1.4; // [.8:.05:3]
 // positive for raised lettering, negative for engraved (mm)
 letter_emboss = -.5; // [-1:.05:.5]
+/* [Braille settings] */
+Braille_font = "DejaVu Sans,Segoe UI Symbol,Apple Symbols";
+Braille_Height = 6.15; //[2:.05:7]
+// Reposition Braille vertically (mm)
+Braille_position = 0; //[-4:.1:4]
+
+/* [Hidden] */
+$fa = 1;
+$fs = 0.4;
+UNIBRAILLE = "⠼⠫⠩⠯⠄⠷⠾⠡⠬⠠⠤⠨⠌⠴⠂⠆⠒⠲⠢⠖⠶⠦⠔⠱⠰⠣⠿⠜⠹⠈⠁⠃⠉⠙⠑⠋⠛⠓⠊⠚⠅⠇⠍⠝⠕⠏⠟⠗⠎⠞⠥⠧⠺⠭⠽⠵⠪⠳⠻⠘⠸";
+UNIASC =     "#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_";
+
+// Concatenate a vector=v of strings to a prefix string=s.
+function cat(s, v) =
+  len(v) == 0 ? s :
+  len(v) == 1 ? str(s, v[0]) :
+  cat(str(s, v[0]), [for(i=[1:len(v)-1]) v[i]]);
+  
+function toBraille(s) = cat("",[for(c = s) let(x = search(ord("a") <= ord(c) && ord(c) <= ord("z") ? chr(ord(c) - (ord("a")-ord("A"))) : c, UNIASC)) len(x) == 0 ? " " : UNIBRAILLE[x[0]]]);
+
+include <keytype_defs.scad>
 
 module textlines(texts, size=4, halign="center", font="", lineheight=1.4) {
     lines = is_list(texts) ? texts : [texts];
     delta_y = ((len(lines)-1)*size*lineheight - size)/2;
     for (i=[0:len(lines)-1]) {
-        translate([0,delta_y-i*size*lineheight,0]) text( lines[i], font=font, size=size,halign=halign);
+        translate([0,delta_y-i*size*lineheight,0]) text( lines[i], font=Font, size=size,halign=halign);
     }
 }
 
@@ -39,8 +69,12 @@ module nope(tex) {
         translate([0, 0, -1.5]) rotate([0, 0, 45]) cube([27, 4, 1], center=true);
     }
     textlines(tex, size=4);
+    echo(texlines);
 }
 
+/*
+    Import an SVG file of a specified width and merge it with its mirror image. If fill is true we also fill interior holes.
+*/
 module flip_import(filename, width, fill=false) {
     union() {
         if (fill) { fill() import(filename); } else { import(filename); };
@@ -50,57 +84,93 @@ module flip_import(filename, width, fill=false) {
     }
 }
 
-$fa = 1;
-$fs = 0.4;
-// positive to emboss, negative to engrave label.
+/* stampSide: create an object to add decoration to a flat side of a key sleeve.
 
-// parameters for a key type are:
-//  0: SVG filename.
-//  1: cut line for bottom of sleeve.
-//  2: cut line for top of sleeve, or a list of y-coordinates for a not-straight top.
-//  3: width of key, or [width,depth] for thicker/thinner keys.
-//  4-n: [x,y,width] to position wedges inside the sleeve to lock into holes in the key.
-choices = [
-    ["kwikset-3-holes", 3.47, 14.8, 22, [5.4,13.85,3.6], [16.6,13.85,3.6]],
-    ["hy-ko-KW1", 3, 19.62, 22.5, [11.25,18.8,5]],
-    ["minutekey-plain", .56, [11,17.2,17.2,11], 22.2, [11.1,16.29,2.5]],
-    ["minutekey-cutout", 6.7, 16.8, 22.2, [11.1,15.11,2.5]],
-//    ["schlage-95", 5.32, [17,20,22.8,22.8,20,17], [25.2,2.4], [13.1,22.2, 4]],
-    ["schlage-95", 5.32, [16,18.5,22.25,22.25,18.5,16], [26.2,2.4], [12.6,21.4, 4]],
-    ["hillman-95", 9, [17,20,21.2,21.2,20,17], 25, [12.5,20.3, 4]],
-    ["ace-kw1", 4, [12,18.9,18.9,12], 22.5, [11.25,18.1, 4]],
-    ["unknownkey1", 6, 20.45, 22.3, [11.15,19.6,5.5]]
-    ];
+    parms: list containing [type, labeltext] where
+        type = "E" to emboss text,
+               "L" for engraved label,
+               "B" for Braille text,
+               "T" for texture
+        labeltext is what text we want.
+    subtracting: if true, the returned object will be subtracted from the sleeve, else added.
+    
+    The resulting object faces upward, is centered at the XY origin, and should be translated to apply to the surface along the z=0 plane.
+*/
+module stampSide(parms, keywidth, subtracting = true) {
+    type = parms[0];
+    if (subtracting) {
+        if (type == "L") {
+            rotate([0,180,0])
+                translate([0,text_position,letter_emboss])
+                linear_extrude(height=.01-letter_emboss)
+                text(parms[1], size=letter_height, font=Font, halign="center", valign="center");
+        } else if (type == "T") {
+            rotate([0,180,0])
+            texture_stamp(Texture, (keywidth + 3), 0.3);
+        }
+    } else { // adding
+        if (type == "B") {
+            translate([0, Braille_position, -.02])
+            linear_extrude(height=0.5)
+            text(toBraille(parms[1]), size=Braille_Height, font=Braille_font, halign="center", valign="center");
+        } else if (type == "E") {
+            translate([0,text_position,-.001])
+                linear_extrude(height=letter_emboss)
+                text(parms[1], size=letter_height, font=Font, halign="center", valign="center");
+        }
+    }
+}
 
-if(key_style < 0 || key_style >= len(choices)) {
-    nope(["Key style may range", str("from 0 to ", len(choices)-1)]);
+parms = obj(KEYTYPES,key_style);
+if (is_undef(parms)) {
+    nope(str("Unknown key type: ", key_style));
 } else {
-    parms = choices[key_style];
-    filename = str(parms[0], ".svg");
-    bottom = parms[1];
-    top = parms[2];
-    keywidth = is_list(parms[3]) ? parms[3][0] : parms[3];
-    keydepth = is_list(parms[3]) ? (parms[3][1]+.2) : 2;
-    textpos = bottom + (max(top) - bottom)/2 + text_position;
-    labelText = (label_line_2=="")?[label_line_1]:[label_line_1,label_line_2];
+    thick = 0.8; // sleeve front/back thickness
+    filename = str(obj(parms, "filename"), ".svg");
+    bottom = obj(parms,"bottom");
+    top = obj(parms,"top");
+    keywidth = obj(parms, "width");
+    keydepth = obj(parms, "depth", 1.8) + .2;
+    sleevedepth = thick + keydepth + thick;
+    textpos = bottom + (max(top) - bottom)/2 + obj(parms,"text-vpos",0);
+    wedges = obj(parms, "wedges");
 
+    front =
+        [
+            (On_front == "L" && (Label_front == "" || letter_emboss == 0))
+             ? ""
+             : (On_front == "L" && letter_emboss > 0)
+                ? "E"
+                : On_front,
+            Label_front
+        ];
+    back =
+        On_back == "S" 
+        ? front
+        : [
+            On_back == "L" && (Label_back == "" || letter_emboss == 0)
+            ? ""
+            : (On_back == "L" && letter_emboss > 0)
+                ? "E"
+                : On_back,
+            Label_back
+          ];
     rotate([90, 0, 0])
     {
         difference() {
             // main body of key sleeve - 1mm border around key shape.
-            color("#0000ff40") linear_extrude(2+keydepth, convexity=0) offset(r=1) {
+            color("#0000ff40") linear_extrude(sleevedepth, convexity=0) offset(r=1) {
                 flip_import(filename, width=keywidth, fill=true);
-    //            circle(1);
             }
             
             // interior hollow to accommodate key.
-            color("white") translate([0,0,1]) linear_extrude(keydepth, convexity=0) offset(r=.2) {
+            color("white") translate([0,0,thick]) linear_extrude(keydepth, convexity=0) offset(r=.2) {
                 flip_import(filename, width=keywidth, fill=true);
     //            circle(.2);
             }
             
             // trim bottom of sleeve to specified bottom height.
-            translate([-2,-3,-1]) cube([30,3+bottom,4+keydepth]);
+            translate([-2,-3,-1]) cube([30,3+bottom,2+sleevedepth]);
             
             // trim top of sleeve to specified y-coordinate or set of points.
             if(is_list(top)) {
@@ -111,50 +181,40 @@ if(key_style < 0 || key_style >= len(choices)) {
                     [s_wid-1.01,50],
                     [-1.01,50]
                 ];
-                translate([0, 0, -1]) linear_extrude(height=4+keydepth) polygon(points);
+                translate([0, 0, -1]) linear_extrude(height=2+sleevedepth) polygon(points);
             } else {
-                translate([-2,top,-1]) cube([30,30,4+keydepth]);
+                translate([-2,top,-1]) cube([30,30,2+sleevedepth]);
             }
             
-            if (label_line_1 != "" && letter_emboss < 0) {
-               // text on both sides (if engraved).
-                translate([keywidth/2, textpos, 2+keydepth+letter_emboss])
-                    linear_extrude(height=1-letter_emboss)
-                    textlines(labelText, size=letter_height, font=font, lineheight = line_spacing);
-                
-                translate([keywidth/2, textpos, -1])
-                    linear_extrude(height=1-letter_emboss)
-                    rotate([0,180,0])
-                    textlines(labelText, size=letter_height, font=font, lineheight = line_spacing);
-            }
-        }
+            /* if whatever appears on the flat sides is engraved, do that now */
+            translate([keywidth/2, textpos, sleevedepth])
+                rotate([0,180,0])
+                stampSide(front, keywidth, true);
+            translate([keywidth/2, textpos, 0])
+                stampSide(back, keywidth, true);
+        } // end difference
+
         // wedges to lock into holes in key
-        if (!is_undef(parms[4])) {
-            for (i = [4:len(parms)-1]) {
-                point = parms[i];
-//                translate([point[0],point[1],1]) rotate([45,0,0]) cube([point[2], .8, .8], center=true);
-                translate([point[0]-point[2]/2,point[1]-.5,1])
+        if (!is_undef(wedges)) {
+            wedgesarr = is_list(wedges[0])?wedges:[wedges];
+            for (point = wedgesarr) {
+                translate([point[0]-point[2]/2,point[1]-.5,thick])
                     rotate([90,0,90])
                     linear_extrude(height=point[2])
                     polygon([[0,0],[.4,1],[1.3,0], [1.3,-.01],[0,-.01]]);
-//                translate([point[0],point[1],1+keydepth]) rotate([45,0,0]) cube([point[2], .8, .8], center=true);
             }
         }
-        // text on both sides (if embossed).
-        if (label_line_1 != "" && letter_emboss > 0) {
-            translate([keywidth/2, textpos, 1.999 + keydepth])
-            linear_extrude(height=letter_emboss+.001)
-            textlines(labelText, size=letter_height, font=font, lineheight = line_spacing);
-            
-            translate([keywidth/2, textpos, -letter_emboss])
-            linear_extrude(height=letter_emboss+.001)
+        // if what appears on the sides is embossed, do that.
+        translate([keywidth/2,textpos,sleevedepth])
+            stampSide(front, keywidth, false);
+        translate([keywidth/2,textpos,0])
             rotate([0,180,0])
-            textlines(labelText, size=letter_height, font=font, lineheight = line_spacing);
-        }
-     
+            stampSide(back, keywidth, false);
+
         // show ghost key tops and filename for user reference
-        %translate([-28,0,0]) import(filename);
-        %translate([0,0, 1.1]) linear_extrude(height=keydepth-.2, convexity=20) flip_import(filename, width=keywidth);
-        %translate([0, -7, 1]) text(parms[0], 5, halign="center");
+        %translate([-28,0,thick]) linear_extrude(height=keydepth-.2, convexity=20) import(filename);
+        %translate([0,0, thick+.1]) linear_extrude(height=keydepth-.2, convexity=20) flip_import(filename, width=keywidth);
+        %translate([0, -7, 1]) linear_extrude(height=0.01) text(key_style, 5, halign="center");
+//stampSide(back, keywidth, back[0]=="L" || back[0]=="T");
     }
 }
